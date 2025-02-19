@@ -2,6 +2,7 @@
 package br.com.fiap.api_rest.dto;
 
 import br.com.fiap.api_rest.model.Categoria;
+import com.jayway.jsonpath.internal.function.numeric.Min;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.hibernate.annotations.processing.Pattern;
 
