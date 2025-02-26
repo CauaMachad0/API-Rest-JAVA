@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class LivroService {
@@ -37,7 +36,7 @@ public class LivroService {
     }
 
     public LivroResponse livroToResponse(Livro livro) {
-        return new LivroResponse(livro.getAutor() + " - " + livro.getTitulo());
+        return new LivroResponse(livro.getId(), livro.getAutor() + " - " + livro.getTitulo());
     }
 
     public List<LivroResponse> livrosToResponse(List<Livro> livros) {
@@ -49,6 +48,7 @@ public class LivroService {
     }
 
     public Page<LivroResponse> findAll(Pageable pageable) {
+        //return livroRepository.findAll(pageable).map(livro -> livroToResponse(livro));
         return livroRepository.findAll(pageable).map(this::livroToResponse);
-   }
+    }
 }

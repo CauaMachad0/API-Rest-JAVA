@@ -19,6 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 @RestController
 @RequestMapping(value = "/livros")
 public class LivroController {
@@ -40,8 +43,16 @@ public class LivroController {
     public ResponseEntity<Page<LivroResponse>> readLivros(@RequestParam(defaultValue = "0") Integer pageNumber) {
         Pageable pageable = PageRequest
                 .of(pageNumber,2, Sort.by("autor").ascending().and(Sort.by("titulo").ascending()));
-        //Page<Livro> livros = livroRepository.findAll(pageable);
-        return new ResponseEntity<>(livroService.findAll(pageable),HttpStatus.OK);
+        Page<LivroResponse> livros = livroService.findAll(pageable);
+        for (LivroResponse livro : livros) {
+            livro.setLink(
+                    linkTo(
+                            methodOn(LivroController.class)
+                                    .readLivro(livro.getId())
+                    ).withRel("Lista de Livros")
+            );
+        }
+        return new ResponseEntity<>(livros ,HttpStatus.OK);
     }
 
     // @PathVariable localhost:8080/livros/1
@@ -52,7 +63,14 @@ public class LivroController {
         if (livro.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(livroService.livroToResponse(livro.get()),HttpStatus.OK);
+        LivroResponse livroResponse = livroService.livroToResponse(livro.get());
+        livroResponse.setLink(
+                linkTo(
+                        methodOn(LivroController.class)
+                                .readLivros(0)
+                ).withRel("Lista de Livros")
+        );
+        return new ResponseEntity<>(livroResponse,HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
