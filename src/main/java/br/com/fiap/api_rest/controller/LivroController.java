@@ -37,10 +37,10 @@ public class LivroController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<LivroResponse>> readLivros() {
+    public ResponseEntity<Page<LivroResponse>> readLivros(@RequestParam(defaultValue = "0") Integer pageNumber) {
         Pageable pageable = PageRequest
-                .of(0,2, Sort.by("titulo").ascending());
-        Page<Livro> livros = livroRepository.findAll(pageable);
+                .of(pageNumber,2, Sort.by("autor").ascending().and(Sort.by("titulo").ascending()));
+        //Page<Livro> livros = livroRepository.findAll(pageable);
         return new ResponseEntity<>(livroService.findAll(pageable),HttpStatus.OK);
     }
 
