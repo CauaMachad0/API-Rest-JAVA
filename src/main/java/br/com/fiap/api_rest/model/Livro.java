@@ -5,6 +5,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+import java.util.Date;
+
 @Entity
 public class Livro {
     @Id
@@ -14,6 +16,25 @@ public class Livro {
     private String autor;
     private int preco;
     private Categoria categoria;
+    private String isbn;
+    private boolean ebook;
+    private Date dataLacamento;
+
+    public boolean isEbook() {
+        return ebook;
+    }
+
+    public void setEbook(boolean ebook) {
+        this.ebook = ebook;
+    }
+
+    public Date getDataLacamento() {
+        return dataLacamento;
+    }
+
+    public void setDataLacamento(Date dataLacamento) {
+        this.dataLacamento = dataLacamento;
+    }
 
     public int getPreco() {
         return preco;
