@@ -1,7 +1,10 @@
 package br.com.fiap.api_rest.dto;
 
+import br.com.fiap.api_rest.model.Autor;
 import br.com.fiap.api_rest.model.Categoria;
 import jakarta.validation.constraints.*;
+
+import java.util.List;
 
 public class LivroRequest {
     @NotBlank(message = "O título não pode ser nulo ou vazio")
@@ -57,4 +60,5 @@ public class LivroRequest {
     public void setIsbn(String isbn) {
         this.isbn = isbn;
     }
+ }
 }
