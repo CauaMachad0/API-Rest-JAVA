@@ -7,7 +7,7 @@ public class LivroResponse {
     private String infoLivro;
     private Link link;
 
-    public LivroResponse (Long id, String livro) {
+    public LivroResponse(Long id, String infoLivro) {
         this.id = id;
         this.infoLivro = infoLivro;
     }

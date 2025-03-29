@@ -2,76 +2,59 @@ package br.com.fiap.api_rest.service;
 
 import br.com.fiap.api_rest.dto.BibliotecaRequest;
 import br.com.fiap.api_rest.dto.BibliotecaResponse;
+import br.com.fiap.api_rest.mapper.BibliotecaMapper;
 import br.com.fiap.api_rest.model.Biblioteca;
-import br.com.fiap.api_rest.model.Endereco;
-import br.com.fiap.api_rest.model.Livro;
 import br.com.fiap.api_rest.repository.BibliotecaRepository;
-import br.com.fiap.api_rest.repository.EnderecoRepository;
-import br.com.fiap.api_rest.repository.LivroRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class BibliotecaService {
-
     private final BibliotecaRepository bibliotecaRepository;
-    private final EnderecoRepository enderecoRepository;
-    private final LivroRepository livroRepository;
+    private final BibliotecaMapper bibliotecaMapper = new BibliotecaMapper();
 
-    public BibliotecaService(BibliotecaRepository bibliotecaRepository, EnderecoRepository enderecoRepository, LivroRepository livroRepository) {
+    @Autowired
+    public BibliotecaService(BibliotecaRepository bibliotecaRepository) {
         this.bibliotecaRepository = bibliotecaRepository;
-        this.enderecoRepository = enderecoRepository;
-        this.livroRepository = livroRepository;
     }
 
-    @Transactional
-    public BibliotecaResponse criarBiblioteca(BibliotecaRequest request) {
-        Endereco endereco = enderecoRepository.findById(request.getEnderecoId())
-                .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
-
-        Biblioteca biblioteca = new Biblioteca();
-        biblioteca.setNome(request.getNome());
-        biblioteca.setEndereco(endereco);
-
-        biblioteca = bibliotecaRepository.save(biblioteca);
-
-        List<String> livros = livroRepository.findAllByBiblioteca(biblioteca).stream()
-                .map(Livro::getTitulo)
-                .collect(Collectors.toList());
-
-        return new BibliotecaResponse(biblioteca.getId(), biblioteca.getNome(), endereco.getRua(), livros);
+    public BibliotecaResponse save(BibliotecaRequest bibliotecaRequest) {
+        return bibliotecaMapper.bibliotecaToResponse(bibliotecaRepository.save(bibliotecaMapper.requestToBiblioteca(bibliotecaRequest)));
     }
 
-    public BibliotecaResponse buscarBibliotecaPorId(Long id) {
-        Biblioteca biblioteca = bibliotecaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Biblioteca não encontrada"));
-
-        List<String> livros = livroRepository.findAllByBiblioteca(biblioteca).stream()
-                .map(Livro::getTitulo)
-                .collect(Collectors.toList());
-
-        return new BibliotecaResponse(biblioteca.getId(), biblioteca.getNome(), biblioteca.getEndereco().getRua(), livros);
+    public Page<BibliotecaResponse> findAll(Pageable pageable) {
+        return bibliotecaRepository.findAll(pageable).map(bibliotecaMapper::bibliotecaToResponse);
     }
 
-    public List<BibliotecaResponse> listarBibliotecas() {
-        List<Biblioteca> bibliotecas = bibliotecaRepository.findAll();
-
-        return bibliotecas.stream()
-                .map(biblioteca -> new BibliotecaResponse(biblioteca.getId(), biblioteca.getNome(),
-                        biblioteca.getEndereco().getRua(),
-                        livroRepository.findAllByBiblioteca(biblioteca).stream()
-                                .map(Livro::getTitulo)
-                                .collect(Collectors.toList())))
-                .collect(Collectors.toList());
+    public Biblioteca findBibliotecaById(Long id) {
+        Optional<Biblioteca> biblioteca = bibliotecaRepository.findById(id);
+        return biblioteca.orElse(null);
     }
 
-    @Transactional
-    public void deletarBiblioteca(Long id) {
-        Biblioteca biblioteca = bibliotecaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Biblioteca não encontrada"));
-        bibliotecaRepository.delete(biblioteca);
+    public BibliotecaResponse findById(Long id) {
+        Optional<Biblioteca> biblioteca = bibliotecaRepository.findById(id);
+        return biblioteca.map(bibliotecaMapper::bibliotecaToResponse).orElse(null);
+    }
+
+    public BibliotecaResponse update(BibliotecaRequest bibliotecaRequest, Long id) {
+        Optional<Biblioteca> biblioteca = bibliotecaRepository.findById(id);
+        if (biblioteca.isPresent()) {
+            Biblioteca bibliotecaSalvo = bibliotecaRepository.save(biblioteca.get());
+            return bibliotecaMapper.bibliotecaToResponse(bibliotecaSalvo);
+        }
+        return null;
+    }
+
+    public boolean delete(Long id) {
+        Optional<Biblioteca> biblioteca = bibliotecaRepository.findById(id);
+        if (biblioteca.isPresent()) {
+            bibliotecaRepository.delete(biblioteca.get());
+            return true;
+        }
+        return false;
     }
 }

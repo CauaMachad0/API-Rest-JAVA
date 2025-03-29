@@ -8,20 +8,13 @@ public class Endereco {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String localizacao;
+    @OneToOne(mappedBy = "endereco")
+    private Biblioteca biblioteca;
 
-    public Biblioteca getBiblioteca() {
-        return biblioteca;
+    public Endereco() {
     }
 
-    public void setBiblioteca(Biblioteca biblioteca) {
-        this.biblioteca = biblioteca;
-    }
-
-    public String getLocalizacao() {
-        return localizacao;
-    }
-
-    public void setLocalizacao(String localizacao) {
+    public Endereco(String localizacao) {
         this.localizacao = localizacao;
     }
 
@@ -33,6 +26,19 @@ public class Endereco {
         this.id = id;
     }
 
-    @OneToOne(mappedBy = "endereco")
-    private Biblioteca biblioteca;
+    public String getLocalizacao() {
+        return localizacao;
+    }
+
+    public void setLocalizacao(String localizacao) {
+        this.localizacao = localizacao;
+    }
+
+    public Biblioteca getBiblioteca() {
+        return biblioteca;
+    }
+
+    public void setBiblioteca(Biblioteca biblioteca) {
+        this.biblioteca = biblioteca;
+    }
 }

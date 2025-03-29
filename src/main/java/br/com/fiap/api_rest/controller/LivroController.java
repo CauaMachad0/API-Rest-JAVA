@@ -1,9 +1,13 @@
 package br.com.fiap.api_rest.controller;
 
 import br.com.fiap.api_rest.dto.LivroRequest;
-import br.com.fiap.api_rest.dto.LivroResponseDTO;
+import br.com.fiap.api_rest.dto.LivroResponse;
+import br.com.fiap.api_rest.mapper.LivroMapper;
+import br.com.fiap.api_rest.model.Autor;
 import br.com.fiap.api_rest.model.Livro;
 import br.com.fiap.api_rest.repository.LivroRepository;
+import br.com.fiap.api_rest.service.AutorService;
+import br.com.fiap.api_rest.service.BibliotecaService;
 import br.com.fiap.api_rest.service.LivroService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,125 +25,107 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
 @RestController
-@RequestMapping(value = "/livros", consumes = {"application/json"})
+@RequestMapping(value = "/livros")
 @Tag(name = "api-livros")
 public class LivroController {
     @Autowired
-    private LivroRepository livroRepository;
-    @Autowired
     private LivroService livroService;
+    private final LivroMapper livroMapper = new LivroMapper();
+    @Autowired
+    private AutorService autorService;
+    @Autowired
+    private BibliotecaService bibliotecaService;
 
     // CREATE, READ, UPDATE, DELETE
     // POST, GET, PUT, DELETE
+
     @Operation(summary = "Cria um novo livro")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Livro criado com sucesso",
-                content = {@Content(
-                        mediaType = "app",
-                        schema = @Schema(implementation = Livro.class))}),
-        @ApiResponse(responseCode = "400", description = "Parâmetro inválidos",
-                content = {@Content(schema = @Schema())} )
+            @ApiResponse(responseCode = "201", description = "Livro criado com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Livro.class))),
+            @ApiResponse(responseCode = "400", description = "Parâmetros informados são inválidos",
+                    content = @Content(schema = @Schema()))
     })
     @PostMapping
-    public ResponseEntity<Livro> createLivro(@Valid @RequestBody LivroRequest livro) {
-        Livro livroSalvo = livroRepository.save(livroService.requestToLivro(livro));
-        return new ResponseEntity<>(livroSalvo,HttpStatus.CREATED);
+    public ResponseEntity<LivroResponse> createLivro(@Valid @RequestBody LivroRequest livroRequest) {
+        List<Autor> autores = autorService.saveAll(livroRequest.getAutores());
+        Livro livro = livroMapper.requestToLivro(livroRequest);
+        livro.setAutores(autores);
+        livro.setBiblioteca(bibliotecaService.findBibliotecaById(livroRequest.getBiblioteca()));
+        return new ResponseEntity<>(livroService.save(livro),HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Lista todos os livros por página")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Livro criado com sucesso",
-                    content = {@Content(
-                            mediaType = "app",
-                            schema = @Schema(implementation = Livro.class))}),
-            @ApiResponse(responseCode = "400", description = "Parâmetro inválidos",
-                    content = {@Content(schema = @Schema())} )
-    })
+    @Operation(summary = "Lista todos os livros por páginas")
     @GetMapping
-    public ResponseEntity<Page<LivroResponseDTO>> readLivros(@RequestParam(defaultValue = "0") Integer pageNumber) {
+    public ResponseEntity<Page<LivroResponse>> readLivros(@RequestParam(defaultValue = "0") Integer pageNumber) {
         Pageable pageable = PageRequest
-                .of(pageNumber, 2, Sort.by("autor").ascending()
-                        .and(Sort.by("titulo").ascending()));
-//        Page<LivroResponse> livros = livroService.findAll(pageable);
-//        for (LivroResponse livro : livros) {
-//            livro.setLink(
-//                    linkTo(
-//                            methodOn(LivroController.class)
-//                                    .readLivro(livro.getId())
-//                    ).withSelfRel()
-//            );
-//        }
-        return new ResponseEntity<>(livroService.findAllDTO(pageable), HttpStatus.OK);
+                .of(pageNumber, 2, Sort.by("titulo").ascending());
+        return new ResponseEntity<>(livroService.findAll(pageable), HttpStatus.OK);
     }
 
     // @PathVariable localhost:8080/livros/1
     // @RequestParam localhost:8080/livros/?id=1
     @Operation(summary = "Retorna um livro por ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Livro encontrado com sucesso",
-                    content = {@Content(
-                            mediaType = "app",
-                            schema = @Schema(implementation = LivroResponseDTO.class))}),
+            @ApiResponse(responseCode = "200", description = "Livro encontrado com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LivroResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Nenhum livro encontrado para o ID fornecido",
+                    content = @Content(schema = @Schema()))
     })
     @GetMapping("/{id}")
-    public ResponseEntity<LivroResponseDTO> readLivro(@PathVariable Long id) {
-        Optional<Livro> livro = livroRepository.findById(id);
-        if (livro.isEmpty()) {
+    public ResponseEntity<LivroResponse> readLivro(@PathVariable Long id) {
+        LivroResponse livroResponse = livroService.findById(id);
+        if (livroResponse == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-//        LivroResponse livroResponse = livroService.livroToResponse(livro.get());
-//        livroResponse.setLink(
-//                linkTo(
-//                        methodOn(LivroController.class)
-//                                .readLivros(0)
-//                ).withRel("Lista de Livros")
-//        );
-        LivroResponseDTO livroResponseDTO = livroService.livroToResponseDTO(livro.get(), false);
-        return new ResponseEntity<>(livroResponseDTO,HttpStatus.OK);
+        return new ResponseEntity<>(livroResponse,HttpStatus.OK);
     }
 
     @Operation(summary = "Atualiza um livro existente")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Livro criado com sucesso",
-                    content = {@Content(
-                            mediaType = "app",
-                            schema = @Schema(implementation = Livro.class))}),
-            @ApiResponse(responseCode = "400", description = "Parâmetro inválidos",
-                    content = {@Content(schema = @Schema())} )
+            @ApiResponse(responseCode = "201", description = "Livro atualizado com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Livro.class))),
+            @ApiResponse(responseCode = "400", description = "Nenhum livro encontrado para o ID fornecido",
+                    content = @Content(schema = @Schema()))
     })
     @PutMapping("/{id}")
-    public ResponseEntity<Livro> updateLivro(@PathVariable Long id,
-                                             @RequestBody LivroRequest livro) {
-        Optional<Livro> livroExistente = livroRepository.findById(id);
-        if (livroExistente.isEmpty()) {
+    public ResponseEntity<LivroResponse> updateLivro(@PathVariable Long id,
+                                                     @RequestBody LivroRequest livroRequest) {
+        Livro livro = livroService.findLivroById(id);
+        if (livro == null) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
-        Livro livroConvertido = livroService.requestToLivro(livro);
-        livroConvertido.setId(livroExistente.get().getId());
-        Livro livroSalvo = livroRepository.save(livroConvertido);
-        return new ResponseEntity<>(livroSalvo,HttpStatus.CREATED);
+        List<Autor> autores = autorService.saveAll(livroRequest.getAutores());
+        Livro livroConvertido = livroMapper.requestToLivro(livroRequest);
+        livroConvertido.setId(livro.getId());
+        livroConvertido.setAutores(autores);
+        return new ResponseEntity<>(livroService.save(livroConvertido),HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Deleta um livro existente por ID")
+    @Operation(summary = "Exclui um livro por ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Livro criado com sucesso",
-                    content = {@Content(
-                            mediaType = "app",
-                            schema = @Schema(implementation = Livro.class))}),
-            @ApiResponse(responseCode = "400", description = "Parâmetro inválidos",
-                    content = {@Content(schema = @Schema())} )
+            @ApiResponse(responseCode = "200", description = "Livro excluído com sucesso",
+                    content = @Content(schema = @Schema())),
+            @ApiResponse(responseCode = "400", description = "Nenhum livro encontrado para o ID fornecido",
+                    content = @Content(schema = @Schema()))
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLivro(@PathVariable Long id) {
-        livroRepository.deleteById(id);
+        boolean deletado = livroService.deleteById(id);
+        if (!deletado) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
         return new ResponseEntity<>(HttpStatus.OK);
-
     }
 
 }

@@ -2,7 +2,6 @@ package br.com.fiap.api_rest.model;
 
 import jakarta.persistence.*;
 
-import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -11,72 +10,15 @@ public class Livro {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String titulo;
-    @ManyToMany(mappedBy = "Livros")
+    @ManyToMany(mappedBy = "livros")
     private List<Autor> autores;
     private int preco;
     private Categoria categoria;
     private String isbn;
-    private boolean ebook;
-    private Date dataLacamento;
     @ManyToOne
     @JoinColumn(name = "id_biblioteca")
     private Biblioteca biblioteca;
-
-    public boolean isEbook() {
-        return ebook;
-    }
-
-    public Biblioteca getBiblioteca() {
-        return biblioteca;
-    }
-
-    public void setBiblioteca(Biblioteca biblioteca) {
-        this.biblioteca = biblioteca;
-    }
-
-    public List<Autor> getAutores() {
-        return autores;
-    }
-
-    public void setAutores(List<Autor> autores) {
-        this.autores = autores;
-    }
-
-    public void setEbook(boolean ebook) {
-        this.ebook = ebook;
-    }
-
-    public Date getDataLacamento() {
-        return dataLacamento;
-    }
-
-    public void setDataLacamento(Date dataLacamento) {
-        this.dataLacamento = dataLacamento;
-    }
-
-    public int getPreco() {
-        return preco;
-    }
-
-    public void setPreco(int preco) {
-        this.preco = preco;
-    }
-
-    public String getIsbn() {
-        return isbn;
-    }
-
-    public void setIsbn(String isbn) {
-        this.isbn = isbn;
-    }
-
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
+    private int numeroExemplar;
 
     public Long getId() {
         return id;
@@ -94,4 +36,51 @@ public class Livro {
         this.titulo = titulo;
     }
 
+    public List<Autor> getAutores() {
+        return autores;
+    }
+
+    public void setAutores(List<Autor> autores) {
+        this.autores = autores;
+    }
+
+    public int getPreco() {
+        return preco;
+    }
+
+    public void setPreco(int preco) {
+        this.preco = preco;
+    }
+
+    public Categoria getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(Categoria categoria) {
+        this.categoria = categoria;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
+    public Biblioteca getBiblioteca() {
+        return biblioteca;
+    }
+
+    public void setBiblioteca(Biblioteca biblioteca) {
+        this.biblioteca = biblioteca;
+    }
+
+    public int getNumeroExemplar() {
+        return numeroExemplar;
+    }
+
+    public void setNumeroExemplar(int numeroExemplar) {
+        this.numeroExemplar = numeroExemplar;
+    }
 }

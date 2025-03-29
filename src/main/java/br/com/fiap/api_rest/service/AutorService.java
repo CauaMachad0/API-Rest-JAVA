@@ -2,85 +2,66 @@ package br.com.fiap.api_rest.service;
 
 import br.com.fiap.api_rest.dto.AutorRequest;
 import br.com.fiap.api_rest.dto.AutorResponse;
+import br.com.fiap.api_rest.mapper.AutorMapper;
 import br.com.fiap.api_rest.model.Autor;
-import br.com.fiap.api_rest.model.Livro;
 import br.com.fiap.api_rest.repository.AutorRepository;
-import br.com.fiap.api_rest.repository.LivroRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class AutorService {
+    private final AutorMapper autorMapper = new AutorMapper();
 
+    // SINGLETON----
     private final AutorRepository autorRepository;
-    private final LivroRepository livroRepository;
-
-    public AutorService(AutorRepository autorRepository, LivroRepository livroRepository) {
+    @Autowired
+    public AutorService(AutorRepository autorRepository) {
         this.autorRepository = autorRepository;
-        this.livroRepository = livroRepository;
+    }
+    // SINGLETON----
+
+    public AutorResponse save(AutorRequest autorRequest) {
+        return autorMapper.autorToResponse(autorRepository.save(autorMapper.requestToAutor(autorRequest)));
     }
 
-    @Transactional
-    public AutorResponse criarAutor(AutorRequest request) {
-        Autor autor = new Autor();
-        autor.setNome(request.getNome());
-
-        if (request.getLivrosIds() != null && !request.getLivrosIds().isEmpty()) {
-            List<Livro> livros = livroRepository.findAllById(request.getLivrosIds());
-            autor.setLivros(livros);
+    public List<Autor> saveAll(List<AutorRequest> autoresRequest) {
+        List<Autor> autores = new ArrayList<>();
+        for (AutorRequest autorRequest : autoresRequest) {
+            autores.add(autorMapper.requestToAutor(autorRequest));
         }
-
-        autor = autorRepository.save(autor);
-
-        return new AutorResponse(autor.getId(), autor.getNome(),
-                autor.getLivros().stream().map(Livro::getTitulo).collect(Collectors.toList()));
+        return autorRepository.saveAll(autores);
     }
 
-    public List<AutorResponse> listarAutores() {
-        List<Autor> autores = autorRepository.findAll();
-
-        return autores.stream()
-                .map(autor -> new AutorResponse(autor.getId(), autor.getNome(),
-                        autor.getLivros().stream().map(Livro::getTitulo).collect(Collectors.toList())))
-                .collect(Collectors.toList());
+    public Page<AutorResponse> findAll(Pageable pageable) {
+        return autorRepository.findAll(pageable).map(autorMapper::autorToResponse);
     }
 
-    public AutorResponse buscarPorId(Long id) {
-        Autor autor = autorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Autor não encontrado"));
-
-        return new AutorResponse(autor.getId(), autor.getNome(),
-                autor.getLivros().stream().map(Livro::getTitulo).collect(Collectors.toList()));
+    public AutorResponse findById(Long id) {
+        Optional<Autor> autor = autorRepository.findById(id);
+        return autor.map(autorMapper::autorToResponse).orElse(null);
     }
 
-    @Transactional
-    public AutorResponse atualizarAutor(Long id, AutorRequest request) {
-        Autor autor = autorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Autor não encontrado"));
-
-        autor.setNome(request.getNome());
-
-        if (request.getLivrosIds() != null && !request.getLivrosIds().isEmpty()) {
-            List<Livro> livros = livroRepository.findAllById(request.getLivrosIds());
-            autor.setLivros(livros);
-        } else {
-            autor.setLivros(null);
+    public AutorResponse update(AutorRequest autorRequest, Long id) {
+        Optional<Autor> autor = autorRepository.findById(id);
+        if (autor.isPresent()) {
+            Autor autorSalvo = autorRepository.save(autor.get());
+            return autorMapper.autorToResponse(autorSalvo);
         }
-
-        autor = autorRepository.save(autor);
-
-        return new AutorResponse(autor.getId(), autor.getNome(),
-                autor.getLivros().stream().map(Livro::getTitulo).collect(Collectors.toList()));
+        return null;
     }
 
-    @Transactional
-    public void deletarAutor(Long id) {
-        if (!autorRepository.existsById(id)) {
-            throw new RuntimeException("Autor não encontrado");
+    public boolean delete(Long id) {
+        Optional<Autor> autor = autorRepository.findById(id);
+        if (autor.isPresent()) {
+            autorRepository.delete(autor.get());
+            return true;
         }
-        autorRepository.deleteById(id);
+        return false;
     }
 }
